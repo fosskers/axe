@@ -14,11 +14,11 @@ import           Text.Printf
 type Line = BL.ByteString
 
 file :: FilePath
-file = "/home/colin/code/azavea/axe/diomede.osm" --"ireland.osm"
+file = "/home/colin/code/azavea/axe/north-van.osm"
 
 -- | The output path.
 out :: Int -> FilePath
-out = printf "/home/colin/code/azavea/axe/catalog/out-%d.osm"
+out = printf "/home/colin/code/azavea/axe/catalog/out-%08d.osm"
 
 -- | Streams elements from the source file line-by-line.
 -- This drops the first three lines, which are not Elements.
