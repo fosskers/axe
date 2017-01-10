@@ -16,7 +16,7 @@ Usage
 -----
 
 ```console
-> axe --input /path/to/giant/xml.osm
+> axe --input /path/to/giant/xml.osm --catalog /path/to/output/catalog/
 ```
 
 Dependency Graph

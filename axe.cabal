@@ -7,7 +7,7 @@ license-file:        LICENSE
 author:              Colin Woodbury
 maintainer:          cwoodbury@azavea.com
 build-type:          Simple
-extra-source-files:  ChangeLog.md
+extra-source-files:  CHANGELOG.md
 cabal-version:       >=1.10
 
 executable axe
