@@ -1,10 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE DeriveGeneric, DeriveAnyClass #-}
 
 module Main where
 
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.ByteString.Streaming.Char8 as Q
+import           Options.Generic
 import           Streaming
 import qualified Streaming.Prelude as S
 import           Text.Printf
@@ -13,8 +15,8 @@ import           Text.Printf
 
 type Line = BL.ByteString
 
-file :: FilePath
-file = "/home/colin/code/azavea/axe/ireland.osm"
+-- | The runtime environment.
+data Env = Env { input :: FilePath } deriving (Generic, ParseRecord)
 
 -- | The output path.
 out :: Int -> FilePath
@@ -22,8 +24,8 @@ out = printf "/home/colin/code/azavea/axe/catalog/out-%08d.osm"
 
 -- | Streams elements from the source file line-by-line.
 -- This drops the first three lines, which are not Elements.
-xml :: MonadResource m => Stream (Of Line) m ()
-xml = S.drop 3 . S.mapped Q.toLazy . Q.lines $ Q.readFile file
+xml :: MonadResource m => FilePath -> Stream (Of Line) m ()
+xml = S.drop 3 . S.mapped Q.toLazy . Q.lines . Q.readFile
 
 -- | Child tags begin with at least two whitespaces.
 isChild :: Line -> Bool
@@ -53,4 +55,6 @@ work !n s = do
     Left _ -> pure ()
 
 main :: IO ()
-main = runResourceT (work 0 xml) >> putStrLn "Done."
+main = do
+  Env i <- getRecord "Axe - Cut arbitrarily large OSM XML files."
+  runResourceT (work 0 $ xml i) >> putStrLn "Done."
