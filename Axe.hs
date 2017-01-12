@@ -15,6 +15,7 @@ import           Text.Printf
 ---
 
 type Line = BL.ByteString
+type RIO = ResourceT IO
 
 -- | The runtime environment.
 data Env = Env { input :: FilePath, catalog :: FilePath } deriving (Generic, ParseRecord)
@@ -25,7 +26,7 @@ out fp = printf (fp </> "out-%08d.osm")
 
 -- | Streams elements from the source file line-by-line.
 -- This drops the first three lines, which are not Elements.
-xml :: MonadResource m => FilePath -> Stream (Of Line) m ()
+xml :: FilePath -> Stream (Of Line) RIO ()
 xml = S.drop 3 . S.mapped Q.toLazy . Q.lines . Q.readFile
 
 -- | Child tags begin with at least two whitespaces.
@@ -35,7 +36,7 @@ isChild = BL.isPrefixOf "  "
 
 -- | Stream a group of 10,000 or so lines, such that each Element's closing tag
 -- is present in the Stream. Returns the rest of the Stream.
-elements :: Monad m => Stream (Of Line) m r -> Stream (Of Line) m (Stream (Of Line) m r)
+elements :: Stream (Of Line) RIO r -> Stream (Of Line) RIO (Stream (Of Line) RIO r)
 elements s = do
   next <- S.splitAt 10000 s >>= S.span isChild >>= lift . S.next
   case next of
@@ -44,11 +45,11 @@ elements s = do
     Left r -> pure $ pure r
 
 -- | Yield a legal @<osm> ... </osm>@ block.
-osm :: Monad m => Stream (Of Line) m r -> Stream (Of Line) m (Stream (Of Line) m r)
+osm :: Stream (Of Line) RIO r -> Stream (Of Line) RIO (Stream (Of Line) RIO r)
 osm s = (\_ r _ -> r) <$> S.yield "<osm>" <*> elements s <*> S.yield "</osm>"
 
 -- | Write each @<osm>@ block to a separate file.
-work :: MonadResource m => FilePath -> Int -> Stream (Of Line) m r -> m ()
+work :: FilePath -> Int -> Stream (Of Line) RIO r -> RIO ()
 work c !n s = do
   next <- (Q.writeFile (out c n) . Q.unlines $ S.with (osm s) Q.fromLazy) >>= S.next
   case next of
